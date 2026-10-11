@@ -324,6 +324,27 @@
   .btn.danger { color: var(--danger); border-color: transparent; background: none; padding-left: 0; }
   .btn:disabled { opacity: .5; }
 
+  .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .share-btn {
+    flex: none; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 12px; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 14px; font-weight: 600;
+  }
+  .share-btn:hover { border-color: var(--faint); }
+  .share-btn svg { width: 17px; height: 17px; }
+  #share { width: min(460px, calc(100vw - 24px)); }
+  .share-body { display: grid; justify-items: center; gap: 14px; padding: 24px 20px 20px; text-align: center; }
+  .share-body h2 { margin: 0; font-size: 22px; }
+  .qr {
+    width: min(78vw, 52dvh, 360px);
+    background: #fff; border-radius: 16px; padding: 10px;
+  }
+  .qr svg { display: block; width: 100%; height: auto; }
+  .share-url { margin: 0; font-size: 17px; font-weight: 600; color: var(--accent); word-break: break-all; }
+  .share-body .help { max-width: 320px; }
+  .share-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   #toast {
     position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
@@ -338,7 +359,13 @@
 
 <!-- ============ Setlist ============ -->
 <main id="setlist-view">
-  <div class="eyebrow">The Romantic Tour · Setlist</div>
+  <div class="head-row">
+    <div class="eyebrow">The Romantic Tour · Setlist</div>
+    <button class="share-btn" id="share-open" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg>
+      Share app
+    </button>
+  </div>
   <input id="show-name" aria-label="Show name" placeholder="Show name" autocomplete="off">
   <p id="count"></p>
   <div id="banner" hidden>
@@ -437,6 +464,21 @@
       <button class="btn primary" type="submit">Save</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="share">
+  <div class="share-body">
+    <h2>Scan to get the app</h2>
+    <div class="qr"><svg role="img" aria-label="QR code for the app link" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h33v33H0z"/><path stroke="#000000" d="M2 2.5h7m2 0h1m1 0h3m2 0h5m1 0h7M2 3.5h1m5 0h1m2 0h3m3 0h1m2 0h1m3 0h1m5 0h1M2 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m2 0h1m4 0h2m1 0h1m1 0h3m1 0h1M2 5.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h5m1 0h1m2 0h1m1 0h3m1 0h1M2 6.5h1m1 0h3m1 0h1m1 0h2m1 0h2m3 0h4m2 0h1m1 0h3m1 0h1M2 7.5h1m5 0h1m1 0h1m1 0h1m2 0h1m1 0h3m4 0h1m5 0h1M2 8.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 9.5h1m1 0h1m3 0h2m3 0h1M2 10.5h1m1 0h5m3 0h5m1 0h3m3 0h5M2 11.5h4m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m1 0h9m3 0h1M3 12.5h3m2 0h2m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m2 0h2M2 13.5h2m2 0h2m2 0h1m1 0h3m1 0h3m3 0h1m1 0h1m1 0h2m1 0h1M2 14.5h1m2 0h1m2 0h2m1 0h3m1 0h1m3 0h1m2 0h1m4 0h2M2 15.5h1m1 0h2m1 0h1m6 0h2m2 0h1m1 0h3m1 0h3m3 0h1M2 16.5h10m2 0h7m2 0h1m3 0h2M2 17.5h1m1 0h1m5 0h1m1 0h1m1 0h1m1 0h3m4 0h3m3 0h1M5 18.5h1m1 0h2m1 0h5m4 0h1m1 0h1m1 0h1m3 0h2M2 19.5h1m2 0h2m5 0h2m1 0h1m3 0h8m1 0h1m1 0h1M2 20.5h1m1 0h2m1 0h4m1 0h2m1 0h3m1 0h1m4 0h1m3 0h1M2 21.5h1m1 0h3m4 0h3m1 0h1m1 0h2m3 0h5m2 0h1M2 22.5h1m1 0h1m1 0h3m1 0h2m4 0h4m2 0h5m1 0h3M10 23.5h5m3 0h5m3 0h5M2 24.5h7m8 0h1m1 0h1m1 0h2m1 0h1m1 0h3M2 25.5h1m5 0h1m1 0h2m2 0h1m1 0h1m3 0h3m3 0h1m2 0h1M2 26.5h1m1 0h3m1 0h1m1 0h1m1 0h1m4 0h3m2 0h5m1 0h3M2 27.5h1m1 0h3m1 0h1m1 0h1m5 0h1m1 0h1m1 0h2m3 0h1m1 0h4M2 28.5h1m1 0h3m1 0h1m1 0h3m4 0h4m1 0h8M2 29.5h1m5 0h1m3 0h7m3 0h1m4 0h1m1 0h1M2 30.5h7m1 0h1m2 0h2m2 0h1m1 0h1m1 0h1m2 0h2m2 0h1"/></svg>
+</div>
+    <p class="share-url">nvnagr.github.io/concert-lyrics</p>
+    <p class="help">Open the link, add it to the home screen, then tap <b>Get lyrics</b> while online.</p>
+    <div class="share-actions">
+      <button class="btn" type="button" id="share-native" hidden>Share link</button>
+      <button class="btn" type="button" id="share-copy">Copy link</button>
+      <button class="btn primary" type="button" id="share-close">Done</button>
+    </div>
+  </div>
 </dialog>
 
 <div id="toast" hidden></div>
@@ -734,6 +776,23 @@
       S = { name: data.name || 'Setlist', songs: data.songs.map((x) => ({ ...x, id: x.id || uid(), title: x.title || 'Untitled', artist: x.artist || '', lyrics: x.lyrics || '' })) };
       save(); renderList(); toast(`Imported ${S.songs.length} songs`);
     } catch { toast("That file isn't a setlist export"); }
+  };
+
+  // ---------- share (QR code is inlined so it works with no signal) ----------
+  const APP_URL = 'https://nvnagr.github.io/concert-lyrics/';
+  const shareDlg = $('#share');
+  $('#share-open').onclick = () => shareDlg.showModal();
+  $('#share-close').onclick = () => shareDlg.close();
+  shareDlg.addEventListener('click', (e) => { if (e.target === shareDlg) shareDlg.close(); }); // backdrop
+  if (navigator.share) {
+    $('#share-native').hidden = false;
+    $('#share-native').onclick = () => navigator.share({ title: 'Setlist Lyrics', text: 'Big synced lyrics for the Bruno Mars + RAYE show', url: APP_URL }).catch(() => {});
+  }
+  $('#share-copy').onclick = async () => {
+    const btn = $('#share-copy');
+    try { await navigator.clipboard.writeText(APP_URL); btn.textContent = 'Copied!'; }
+    catch { btn.textContent = 'Copy failed'; }
+    setTimeout(() => (btn.textContent = 'Copy link'), 1600);
   };
 
   // ---------- editor ----------
