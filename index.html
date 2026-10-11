@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Setlist Lyrics</title>
+<style>
+  :root {
+    --bg: #08080b;
+    --panel: #121218;
+    --panel-2: #191921;
+    --line: #262631;
+    --text: #f6f4ee;
+    --dim: #8b899a;
+    --faint: #4a4856;
+    --accent: #ffc83d;
+    --danger: #ff6464;
+    --radius: 14px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Setlist view ---------- */
+  #setlist-view {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: max(28px, env(safe-area-inset-top)) 16px 48px;
+  }
+  .eyebrow {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  #show-name {
+    width: 100%;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 4px 0;
+    margin: 6px 0 4px;
+    font-size: clamp(32px, 7vw, 52px);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    outline: none;
+  }
+  #show-name:focus { border-bottom-color: var(--line); }
+  #count { color: var(--dim); margin: 0 0 24px; }
+
+  #songs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .song {
+    display: flex;
+    align-items: stretch;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .song .play {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: none;
+    border: 0;
+    text-align: left;
+  }
+  .song .play:hover { background: var(--panel-2); }
+  .song .num {
+    flex: none;
+    width: 28px;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .song .meta { min-width: 0; display: grid; gap: 3px; }
+  .song .t { font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .song .a { color: var(--dim); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge {
+    justify-self: start;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 99px;
+    border: 1px solid var(--faint);
+    color: var(--dim);
+    margin-top: 2px;
+  }
+  .badge.synced { border-color: var(--accent); color: var(--accent); }
+  .badge { white-space: nowrap; }
+  .badge.busy { border-color: var(--text); color: var(--text); }
+  .section-head {
+    margin: 18px 0 2px 4px;
+    color: var(--accent);
+    font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .section-head:first-child { margin-top: 0; }
+  #banner {
+    display: flex; align-items: center; gap: 14px;
+    margin: 0 0 22px; padding: 14px 16px;
+    border: 1px solid var(--accent); border-radius: var(--radius);
+    background: rgba(255, 200, 61, .07);
+    font-size: 15px; line-height: 1.4;
+  }
+  #banner span { flex: 1; }
+  #banner .btn { flex: none; }
+  @media (max-width: 520px) {
+    .song .play { gap: 12px; padding: 14px 4px 14px 12px; }
+    .song .num { width: 20px; font-size: 19px; }
+    .song .t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 17px; line-height: 1.25; }
+    .acts { flex-direction: column; justify-content: center; padding: 4px 4px 4px 0; }
+    .acts .icon { width: 34px; height: 30px; font-size: 15px; }
+  }
+  .acts { display: flex; align-items: center; padding-right: 6px; }
+  .icon {
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    background: none; border: 0; border-radius: 10px;
+    color: var(--dim);
+    font-size: 17px;
+  }
+  .icon:hover { background: var(--panel-2); color: var(--text); }
+  .icon:disabled { opacity: .25; pointer-events: none; }
+
+  #add-song {
+    width: 100%;
+    margin-top: 12px;
+    padding: 18px;
+    border: 1.5px dashed var(--line);
+    border-radius: var(--radius);
+    background: none;
+    color: var(--dim);
+    font-weight: 600;
+  }
+  #add-song:hover { color: var(--text); border-color: var(--faint); }
+  .footer {
+    display: flex; flex-wrap: wrap; gap: 8px 18px;
+    margin-top: 28px;
+    color: var(--dim);
+    font-size: 14px;
+  }
+  .link { background: none; border: 0; padding: 0; color: var(--dim); text-decoration: underline; text-underline-offset: 3px; }
+  .link:hover { color: var(--text); }
+  .keys { margin-top: 18px; color: var(--faint); font-size: 13px; line-height: 1.6; }
+  kbd {
+    font-family: inherit; font-size: 12px;
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 5px; padding: 0 5px; color: var(--dim);
+  }
+
+  /* ---------- Player view ---------- */
+  #player {
+    position: fixed; inset: 0;
+    background: #000;
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    user-select: none; -webkit-user-select: none;
+  }
+  .p-top {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px 0;
+    color: var(--dim);
+    font-size: 15px;
+  }
+  .p-top .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #p-num { color: var(--accent); font-weight: 800; }
+  #p-title { color: var(--text); font-weight: 600; }
+  #p-time, #p-mode { font-variant-numeric: tabular-nums; }
+  #p-mode {
+    font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    border: 1px solid var(--faint); border-radius: 99px; padding: 2px 7px;
+  }
+
+  #stage {
+    flex: 1;
+    min-height: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 3vh;
+    padding: 0 5vw;
+    text-align: center;
+    cursor: pointer;
+  }
+  .line {
+    margin: 0;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+  .side {
+    color: var(--faint);
+    font-size: clamp(16px, 3.6vw, 40px);
+    font-weight: 600;
+    line-height: 1.2;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    min-height: 1.2em;
+  }
+  #l-next { color: #77758a; }
+  #l-cur {
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -.015em;
+    color: var(--text);
+  }
+  #l-cur.card { color: var(--accent); }
+  #l-cur.gap { color: var(--faint); }
+  #l-cur.enter { animation: rise .3s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(.25em); } }
+  @media (prefers-reduced-motion: reduce) { #l-cur.enter { animation: none; } }
+
+  #flash {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 14px 24px; border-radius: 99px;
+    background: rgba(30, 30, 38, .85);
+    color: var(--text); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+    pointer-events: none; opacity: 0;
+    transition: opacity .35s;
+  }
+  #flash.show { opacity: 1; transition: none; }
+  #p-hint { min-height: 1.4em; color: var(--dim); font-size: 15px; text-align: center; padding: 0 16px; }
+  #end-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .pill {
+    padding: 12px 20px;
+    border-radius: 99px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    font-weight: 600;
+  }
+  .pill.primary { background: var(--accent); border-color: var(--accent); color: #000; }
+
+  .progress { height: 3px; background: #15151b; margin: 14px 18px 0; border-radius: 3px; overflow: hidden; }
+  #p-bar { height: 100%; width: 0; background: var(--accent); }
+
+  .controls {
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 10px 14px;
+    opacity: .55;
+    transition: opacity .2s;
+  }
+  .controls:hover, .controls:focus-within { opacity: 1; }
+  .ctl {
+    min-width: 46px; height: 46px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 0 10px;
+    background: none; border: 0; border-radius: 12px;
+    color: var(--text);
+  }
+  .ctl:hover { background: #17171e; }
+  .ctl:disabled { opacity: .3; pointer-events: none; }
+  .ctl svg { width: 22px; height: 22px; }
+  .ctl.big svg { width: 30px; height: 30px; }
+  .sep { width: 1px; height: 24px; background: var(--line); margin: 0 6px; }
+  @media (max-width: 560px) {
+    .controls { gap: 2px; padding: 6px 4px 10px; }
+    .ctl { min-width: 42px; padding: 0 6px; }
+    .sep, #c-full { display: none; }
+  }
+  .speed { display: inline-flex; align-items: center; gap: inherit; }
+  #rate { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; color: var(--dim); font-size: 14px; }
+
+  /* ---------- Editor ---------- */
+  dialog {
+    width: min(680px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    padding: 0;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+  }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  .ed { display: grid; gap: 14px; padding: 20px; }
+  .ed h2 { margin: 0; font-size: 22px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+  label { display: grid; gap: 6px; font-size: 13px; color: var(--dim); font-weight: 600; }
+  .ed input, .ed textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 16px;
+    outline: none;
+  }
+  .ed input:focus, .ed textarea:focus { border-color: var(--faint); }
+  .ed textarea { min-height: 240px; resize: vertical; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 14px; line-height: 1.5; }
+  .find { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #find-status { color: var(--dim); font-size: 13px; }
+  .help { color: var(--dim); font-size: 13px; line-height: 1.55; margin: 0; }
+  .help code { color: var(--text); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .ed-foot { display: flex; gap: 10px; align-items: center; }
+  .ed-foot .grow { flex: 1; }
+  .btn {
+    padding: 10px 18px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    font-weight: 600;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #000; }
+  .btn.danger { color: var(--danger); border-color: transparent; background: none; padding-left: 0; }
+  .btn:disabled { opacity: .5; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: 12px 18px; border-radius: 12px;
+    font-size: 15px; z-index: 10;
+    max-width: calc(100vw - 32px);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ Setlist ============ -->
+<main id="setlist-view">
+  <div class="eyebrow">The Romantic Tour · Setlist</div>
+  <input id="show-name" aria-label="Show name" placeholder="Show name" autocomplete="off">
+  <p id="count"></p>
+  <div id="banner" hidden>
+    <span id="banner-text"></span>
+    <button class="btn primary" id="get-lyrics" type="button">Get lyrics</button>
+  </div>
+  <ol id="songs"></ol>
+  <button id="add-song" type="button">+ Add song</button>
+  <div class="footer">
+    <button class="link" id="export" type="button">Export setlist</button>
+    <button class="link" id="import" type="button">Import setlist</button>
+    <button class="link" id="reset" type="button">Reset setlist</button>
+    <input type="file" id="import-file" accept="application/json,.json" hidden>
+  </div>
+  <div class="keys">
+    In the lyrics screen, held upright: tap <b>below</b> the big lyric for the next line (it re-syncs the timing), <b>above</b> it to go back, and <b>on</b> it to pause or resume.
+    Turned sideways: <b>right</b> = next, <b>left</b> = back, <b>middle</b> = pause.<br>
+    Keys: <kbd>→</kbd>/<kbd>←</kbd> lines, <kbd>Shift</kbd>+<kbd>→</kbd>/<kbd>←</kbd> ±5s, <kbd>P</kbd> pause, <kbd>N</kbd>/<kbd>B</kbd> skip songs, <kbd>F</kbd> fullscreen, <kbd>Esc</kbd> back here.
+  </div>
+</main>
+
+<!-- ============ Player ============ -->
+<section id="player" hidden>
+  <div class="p-top">
+    <span id="p-num"></span>
+    <span class="grow"><span id="p-title"></span></span>
+    <span id="p-mode"></span>
+    <span id="p-time">0:00</span>
+  </div>
+  <div id="stage">
+    <p id="l-prev" class="line side"></p>
+    <p id="l-cur" class="line"></p>
+    <p id="l-next" class="line side"></p>
+    <div id="end-actions" hidden>
+      <button class="pill" id="save-timing" type="button" hidden>Save my tap timings</button>
+      <button class="pill primary" id="start-next" type="button">Start next song</button>
+    </div>
+  </div>
+  <div id="flash" hidden></div>
+  <div id="p-hint"></div>
+  <div class="progress"><div id="p-bar"></div></div>
+  <div class="controls">
+    <button class="ctl" id="c-back" type="button" aria-label="Back to setlist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+    <span class="sep"></span>
+    <button class="ctl" id="c-prev-song" type="button" aria-label="Previous song">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
+    </button>
+    <button class="ctl" id="c-prev" type="button" aria-label="Previous line">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button class="ctl big" id="c-play" type="button" aria-label="Pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path id="play-icon" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+    </button>
+    <button class="ctl" id="c-next" type="button" aria-label="Next line">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+    <button class="ctl" id="c-next-song" type="button" aria-label="Next song">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>
+    </button>
+    <span class="speed" id="speed">
+      <span class="sep"></span>
+      <button class="ctl" id="c-slower" type="button" aria-label="Slower">−</button>
+      <span id="rate" title="Scroll speed">100%</span>
+      <button class="ctl" id="c-faster" type="button" aria-label="Faster">+</button>
+    </span>
+    <span class="sep"></span>
+    <button class="ctl" id="c-full" type="button" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </div>
+</section>
+
+<!-- ============ Song editor ============ -->
+<dialog id="editor">
+  <form class="ed" method="dialog" id="ed-form">
+    <h2 id="ed-heading">Add song</h2>
+    <div class="row2">
+      <label>Title <input id="ed-title" required autocomplete="off"></label>
+      <label>Artist <input id="ed-artist" autocomplete="off"></label>
+    </div>
+    <div class="find">
+      <button class="btn" type="button" id="ed-find">Find synced lyrics</button>
+      <span id="find-status"></span>
+    </div>
+    <label>Lyrics <textarea id="ed-lyrics" spellcheck="false" placeholder="[00:12.50] First line of the song&#10;[00:16.20] Second line&#10;&#10;…or paste plain lines with no timestamps and tap to advance."></textarea></label>
+    <p class="help">
+      <b>Synced:</b> lines like <code>[01:23.45] lyric</code> (LRC format) scroll on their own, and tapping a line re-syncs the clock so you stay in step with the live tempo.
+      <b>Plain:</b> one line per row; you tap to advance. Tap along once and the app can save your timings.
+    </p>
+    <div class="ed-foot">
+      <button class="btn danger" type="button" id="ed-delete">Delete song</button>
+      <span class="grow"></span>
+      <button class="btn" type="button" id="ed-cancel">Cancel</button>
+      <button class="btn primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const KEY = 'setlist-lyrics-v2';
+  const END_HOLD = 8; // seconds the last line stays up before "Up next"
+
+  // Setlist as played on The Romantic Tour, Oct 2026 (setlist.fm, Levi's Stadium / SoFi Stadium).
+  // Lyrics are not bundled; "Get lyrics" downloads them from LRCLIB on this device.
+  const RAYE = 'RAYE · opening set';
+  const BRUNO = 'Bruno Mars';
+  const SILK = 'Silk Sonic set · with Anderson .Paak';
+  const FINALE = 'Bruno Mars · to the finish';
+  const BM = 'Bruno Mars';
+  const SS = 'Silk Sonic';
+  const s = (section, title, artist, extra = {}) => ({ section, title, artist, lyrics: '', ...extra });
+  const SEED = {
+    name: 'Bruno Mars + RAYE',
+    songs: [
+      s(RAYE, 'Beware the South London Lover Boy', 'RAYE'),
+      s(RAYE, 'Skin & Bones', 'RAYE'),
+      s(RAYE, 'Happier Times Ahead', 'RAYE'),
+      s(RAYE, "I Know You're Hurting", 'RAYE'),
+      s(RAYE, 'Joy', 'RAYE'),
+      s(RAYE, 'WHERE IS MY HUSBAND!', 'RAYE'),
+
+      s(BRUNO, "Nothin' on You", 'B.o.B feat. Bruno Mars', { note: 'Intro, played over the PA' }),
+      s(BRUNO, 'Risk It All', BM),
+      s(BRUNO, 'Cha Cha Cha', BM),
+      s(BRUNO, 'On My Soul', BM),
+      s(BRUNO, '24K Magic', BM),
+      s(BRUNO, 'Treasure', BM),
+      s(BRUNO, 'God Was Showing Off', BM),
+      s(BRUNO, 'I Just Might', BM),
+      s(BRUNO, 'Perm', BM),
+      s(BRUNO, 'Why You Wanna Fight?', BM),
+      s(BRUNO, 'Oh Girl', 'The Chi-Lites', { note: 'Low Rider medley 1/3' }),
+      s(BRUNO, "Let's Get It On", 'Marvin Gaye', { note: 'Low Rider medley 2/3' }),
+      s(BRUNO, 'Please Me', 'Cardi B & Bruno Mars', { note: 'Low Rider medley 3/3' }),
+      s(BRUNO, "That's What I Like", BM),
+      s(BRUNO, 'Something Serious', BM),
+
+      s(SILK, 'Blast Off', SS, { note: 'Sung by the keyboardist' }),
+      s(SILK, 'Silk Sonic Intro', SS),
+      s(SILK, '777', SS),
+      s(SILK, 'Fly as Me', SS),
+      s(SILK, 'Smokin Out the Window', SS),
+      s(SILK, 'Leave the Door Open', SS),
+
+      s(FINALE, 'Marry You', BM),
+      s(FINALE, 'Die With a Smile', 'Lady Gaga & Bruno Mars'),
+      s(FINALE, 'It Will Rain', BM, { note: 'Piano medley 1/4' }),
+      s(FINALE, 'Talking to the Moon', BM, { note: 'Piano medley 2/4' }),
+      s(FINALE, 'Grenade', BM, { note: 'Piano medley 3/4' }),
+      s(FINALE, 'When I Was Your Man', BM, { note: 'Piano medley 4/4' }),
+      s(FINALE, 'Versace on the Floor', BM, { note: 'Instrumental', noLyrics: true }),
+      s(FINALE, 'Locked Out of Heaven', BM),
+      s(FINALE, 'Just the Way You Are', BM),
+      s(FINALE, 'Dance With Me', BM),
+      s(FINALE, 'Uptown Funk', 'Mark Ronson feat. Bruno Mars', { note: 'Encore' }),
+    ],
+  };
+  SEED.songs.forEach((song, i) => (song.id = `s${i + 1}`));
+
+  // ---------- storage ----------
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.songs)) return s;
+    } catch {}
+    return JSON.parse(JSON.stringify(SEED));
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {}
+  }
+  let S = load();
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  // ---------- lyrics parsing ----------
+  const TS = /\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g;
+
+  function parse(raw) {
+    const out = [];
+    let timed = false;
+    for (const rawLine of String(raw || '').split(/\r?\n/)) {
+      const stamps = [];
+      const text = rawLine.replace(TS, (_, m, s) => {
+        stamps.push(+m * 60 + parseFloat(s.replace(':', '.')));
+        return '';
+      }).trim();
+      if (!stamps.length && /^\[[a-z#]+:.*\]$/i.test(text)) continue; // LRC metadata, e.g. [ar:...]
+      if (stamps.length) {
+        timed = true;
+        for (const t of stamps) out.push({ t, text });
+      } else {
+        out.push({ t: null, text });
+      }
+    }
+    if (!timed) return { timed, lines: out.filter((l) => l.text) };
+
+    // Timed: drop untimed blanks, give untimed text lines interpolated times, then sort.
+    const lines = out.filter((l) => l.t !== null || l.text);
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].t !== null) continue;
+      let j = i;
+      while (j < lines.length && lines[j].t === null) j++;
+      const before = i > 0 ? lines[i - 1].t : 0;
+      const after = j < lines.length ? lines[j].t : before + (j - i + 1) * 3;
+      const step = (after - before) / (j - i + 1);
+      for (let k = i; k < j; k++) lines[k].t = before + step * (k - i + 1);
+      i = j;
+    }
+    lines.sort((a, b) => a.t - b.t);
+    return { timed, lines };
+  }
+
+  const fmtClock = (s) => {
+    s = Math.max(0, Math.floor(s));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
+  const fmtLrc = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = (s - m * 60).toFixed(2).padStart(5, '0');
+    return `${String(m).padStart(2, '0')}:${sec}`;
+  };
+
+  // ---------- setlist view ----------
+  function renderList() {
+    $('#show-name').value = S.name || '';
+    const n = S.songs.length;
+    $('#count').textContent = n ? `${n} song${n === 1 ? '' : 's'} · tap a song to start its lyrics` : 'No songs yet. Add your first one below.';
+    renderBanner();
+    const ol = $('#songs');
+    ol.replaceChildren();
+    S.songs.forEach((song, i) => {
+      if (song.section && song.section !== S.songs[i - 1]?.section) {
+        const head = document.createElement('li');
+        head.className = 'section-head';
+        head.textContent = song.section;
+        ol.appendChild(head);
+      }
+      const { timed } = parse(song.lyrics);
+      const li = document.createElement('li');
+      li.className = 'song';
+      li.innerHTML = `
+        <button class="play" type="button">
+          <span class="num"></span>
+          <span class="meta"><span class="t"></span><span class="a"></span><span class="badge"></span></span>
+        </button>
+        <div class="acts">
+          <button class="icon up" type="button" aria-label="Move up">↑</button>
+          <button class="icon down" type="button" aria-label="Move down">↓</button>
+          <button class="icon edit" type="button" aria-label="Edit song">✎</button>
+        </div>`;
+      li.querySelector('.num').textContent = i + 1;
+      li.querySelector('.t').textContent = song.title || 'Untitled';
+      const sub = [song.artist, song.note].filter(Boolean).join(' · ');
+      li.querySelector('.a').textContent = sub;
+      li.querySelector('.a').hidden = !sub;
+      const badge = li.querySelector('.badge');
+      const hasLyrics = (song.lyrics || '').trim();
+      const st = fetchStatus[song.id];
+      badge.textContent = song.noLyrics ? 'Instrumental'
+        : hasLyrics ? (timed ? 'Synced' : 'Tap to advance')
+        : st === 'fetching' ? 'Getting lyrics…'
+        : st === 'missing' ? 'Not found · tap ✎ to add'
+        : 'No lyrics yet';
+      badge.classList.toggle('synced', !!timed && !!hasLyrics);
+      badge.classList.toggle('busy', st === 'fetching' && !hasLyrics);
+      li.querySelector('.play').onclick = () => startSong(i);
+      li.querySelector('.edit').onclick = () => openEditor(i);
+      const up = li.querySelector('.up'), down = li.querySelector('.down');
+      up.disabled = i === 0;
+      down.disabled = i === n - 1;
+      up.onclick = () => move(i, -1);
+      down.onclick = () => move(i, 1);
+      ol.appendChild(li);
+    });
+  }
+
+  // ---------- lyrics lookup (LRCLIB) ----------
+  const fetchStatus = {}; // song id -> 'fetching' | 'missing'
+  let fetching = false;
+  const needsLyrics = (song) => !song.noLyrics && !(song.lyrics || '').trim();
+  const norm = (str) => String(str || '').toLowerCase().normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const mainArtist = (artist) => String(artist || '').split(/\s+(?:feat\.?|ft\.?|featuring|&|and|x|,)\s+/i)[0];
+  const VERSION_WORDS = /\b(live|remix|instrumental|karaoke|acoustic|sped up|slowed|demo|version|edit)\b/;
+
+  function pickHit(hits, title, artist) {
+    const t = norm(title);
+    const a = norm(mainArtist(artist));
+    let best = null, bestScore = -Infinity;
+    for (const h of hits) {
+      if (h.instrumental || !(h.syncedLyrics || h.plainLyrics)) continue;
+      const ht = norm(h.trackName);
+      if (!(ht === t || ht.startsWith(t) || t.startsWith(ht))) continue;
+      let score = 0;
+      if (h.syncedLyrics) score += 4;
+      if (ht === t) score += 3;
+      if (a && norm(h.artistName).includes(a)) score += 5;
+      if (VERSION_WORDS.test(ht) && !VERSION_WORDS.test(t)) score -= 4;
+      if (score > bestScore) { best = h; bestScore = score; }
+    }
+    return best;
+  }
+
+  async function lrclibSearch(params) {
+    const res = await fetch(`https://lrclib.net/api/search?${new URLSearchParams(params)}`);
+    if (!res.ok) throw new Error(`LRCLIB ${res.status}`);
+    return res.json();
+  }
+
+  // Returns the best LRCLIB match ({ syncedLyrics, plainLyrics, trackName, artistName }) or null.
+  async function findLyrics(title, artist) {
+    const cleanTitle = title.replace(/[.!?]+$/g, '').trim();
+    const main = mainArtist(artist);
+    let hit = null;
+    if (main) hit = pickHit(await lrclibSearch({ track_name: cleanTitle, artist_name: main }), cleanTitle, artist);
+    if (!hit) hit = pickHit(await lrclibSearch({ q: `${cleanTitle} ${main}`.trim() }), cleanTitle, artist);
+    if (!hit && main) hit = pickHit(await lrclibSearch({ track_name: cleanTitle }), cleanTitle, artist);
+    return hit;
+  }
+
+  async function fetchAll() {
+    if (fetching) return;
+    const todo = S.songs.filter(needsLyrics);
+    if (!todo.length) return;
+    fetching = true;
+    let found = 0, failed = 0;
+    for (const [k, song] of todo.entries()) {
+      fetchStatus[song.id] = 'fetching';
+      $('#banner-text').textContent = `Getting lyrics ${k + 1} of ${todo.length}…`;
+      renderList();
+      try {
+        const hit = await findLyrics(song.title, song.artist);
+        if (hit) {
+          song.lyrics = hit.syncedLyrics || hit.plainLyrics;
+          song.source = `${hit.trackName} · ${hit.artistName}`;
+          delete fetchStatus[song.id];
+          found++;
+          save();
+        } else {
+          fetchStatus[song.id] = 'missing';
+        }
+      } catch {
+        delete fetchStatus[song.id];
+        failed++;
+      }
+    }
+    fetching = false;
+    renderList();
+    if (failed === todo.length) toast("Couldn't reach LRCLIB. Check your connection and try again.");
+    else toast(`Got lyrics for ${found} of ${todo.length} songs${found < todo.length ? '. Tap ✎ on the rest to search or paste.' : '.'}`);
+  }
+
+  function renderBanner() {
+    if (fetching) return;
+    const missing = S.songs.filter(needsLyrics).length;
+    $('#banner').hidden = !missing;
+    $('#banner-text').textContent = `${missing} song${missing === 1 ? '' : 's'} still need${missing === 1 ? 's' : ''} lyrics. Grab them while you're online, then everything works offline at the show.`;
+    $('#get-lyrics').disabled = false;
+  }
+  $('#get-lyrics').onclick = () => { $('#get-lyrics').disabled = true; fetchAll(); };
+  function move(i, d) {
+    const j = i + d;
+    [S.songs[i], S.songs[j]] = [S.songs[j], S.songs[i]];
+    save(); renderList();
+  }
+  $('#show-name').addEventListener('input', (e) => { S.name = e.target.value; save(); });
+  $('#add-song').onclick = () => openEditor(-1);
+  $('#reset').onclick = () => {
+    if (!confirm('Reset to the original Bruno Mars + RAYE setlist? Your edits and downloaded lyrics will be cleared.')) return;
+    S = JSON.parse(JSON.stringify(SEED)); save(); renderList();
+  };
+  $('#export').onclick = () => {
+    const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(S.name || 'setlist').replace(/[^\w-]+/g, '-').toLowerCase()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $('#import').onclick = () => $('#import-file').click();
+  $('#import-file').onchange = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data.songs)) throw new Error();
+      S = { name: data.name || 'Setlist', songs: data.songs.map((x) => ({ ...x, id: x.id || uid(), title: x.title || 'Untitled', artist: x.artist || '', lyrics: x.lyrics || '' })) };
+      save(); renderList(); toast(`Imported ${S.songs.length} songs`);
+    } catch { toast("That file isn't a setlist export"); }
+  };
+
+  // ---------- editor ----------
+  let editing = -1;
+  const dlg = $('#editor');
+  function openEditor(i) {
+    editing = i;
+    const song = S.songs[i] || { title: '', artist: '', lyrics: '' };
+    $('#ed-heading').textContent = i < 0 ? 'Add song' : 'Edit song';
+    $('#ed-title').value = song.title;
+    $('#ed-artist').value = song.artist;
+    $('#ed-lyrics').value = song.lyrics;
+    $('#ed-delete').hidden = i < 0;
+    $('#find-status').textContent = song.source ? `Lyrics from LRCLIB: ${song.source}` : '';
+    dlg.showModal();
+    if (i < 0) $('#ed-title').focus();
+  }
+  $('#ed-cancel').onclick = () => dlg.close();
+  $('#ed-form').addEventListener('submit', () => {
+    const song = {
+      ...(S.songs[editing] || { section: S.songs[S.songs.length - 1]?.section }),
+      id: S.songs[editing]?.id || uid(),
+      title: $('#ed-title').value.trim() || 'Untitled',
+      artist: $('#ed-artist').value.trim(),
+      lyrics: $('#ed-lyrics').value,
+    };
+    if (editing < 0) S.songs.push(song); else S.songs[editing] = song;
+    save(); renderList();
+  });
+  $('#ed-delete').onclick = () => {
+    if (!confirm(`Delete "${S.songs[editing].title}" from the setlist?`)) return;
+    S.songs.splice(editing, 1);
+    save(); renderList(); dlg.close();
+  };
+  $('#ed-find').onclick = async () => {
+    const title = $('#ed-title').value.trim();
+    const artist = $('#ed-artist').value.trim();
+    const status = $('#find-status');
+    if (!title) { status.textContent = 'Enter a title first.'; return; }
+    if ($('#ed-lyrics').value.trim() && !confirm('Replace the lyrics already in the box?')) return;
+    const btn = $('#ed-find');
+    btn.disabled = true;
+    status.textContent = 'Searching LRCLIB…';
+    try {
+      const hit = await findLyrics(title, artist);
+      if (!hit) { status.textContent = 'No lyrics found. Try adjusting the title or artist, or paste them in.'; return; }
+      $('#ed-lyrics').value = hit.syncedLyrics || hit.plainLyrics;
+      if (!artist && hit.artistName) $('#ed-artist').value = hit.artistName;
+      status.textContent = `${hit.syncedLyrics ? 'Synced' : 'Plain (unsynced)'} lyrics loaded: ${hit.trackName} by ${hit.artistName}`;
+    } catch {
+      status.textContent = "Couldn't reach LRCLIB (are you online?). You can paste lyrics instead.";
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  // ---------- player ----------
+  let P = null;
+  let lastFrame = 0;
+  let wakeLock = null;
+
+  function startSong(i) {
+    if (i < 0 || i >= S.songs.length) return;
+    const song = S.songs[i];
+    const { timed, lines } = parse(song.lyrics);
+    P = { i, timed, lines, idx: -1, pos: 0, playing: true, rate: P?.rate || 1, ended: false, stamps: [] };
+    $('#setlist-view').hidden = true;
+    $('#player').hidden = false;
+    $('#p-num').textContent = `${i + 1}/${S.songs.length}`;
+    $('#p-title').textContent = [song.title, song.artist, song.note].filter(Boolean).join(' · ');
+    $('#c-prev-song').disabled = i === 0;
+    $('#c-next-song').disabled = i === S.songs.length - 1;
+    $('#speed').hidden = !timed;
+    updatePlayIcon();
+    updateRate();
+    requestWake();
+    renderLines(true);
+  }
+
+  function exitPlayer() {
+    P = null;
+    $('#player').hidden = true;
+    $('#setlist-view').hidden = false;
+    releaseWake();
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    renderList();
+  }
+
+  const lastIdx = () => P.lines.length - 1;
+
+  function indexAt(pos) {
+    let idx = -1;
+    for (let k = 0; k < P.lines.length && P.lines[k].t <= pos + 1e-6; k++) idx = k;
+    return idx;
+  }
+
+  function next() {
+    if (!P) return;
+    if (P.ended || !P.lines.length) { P.ended ? startSong(P.i + 1) : endSong(); return; }
+    if (P.idx >= lastIdx()) { endSong(); return; }
+    P.idx++;
+    if (P.timed) P.pos = P.lines[P.idx].t; // tapping re-syncs the clock to this line
+    else P.stamps[P.idx] = P.pos;
+    if (!P.playing) { P.playing = true; updatePlayIcon(); }
+    renderLines(true);
+  }
+
+  function prev() {
+    if (!P) return;
+    if (P.ended) {
+      P.ended = false;
+      if (P.timed && P.lines.length) P.pos = P.lines[lastIdx()].t;
+      renderLines(true);
+      return;
+    }
+    if (P.idx < 0) return;
+    P.idx--;
+    if (P.timed) P.pos = P.idx >= 0 ? P.lines[P.idx].t : 0;
+    renderLines(true);
+  }
+
+  function seek(delta) {
+    if (!P || !P.timed || !P.lines.length) return;
+    const end = P.lines[lastIdx()].t + END_HOLD;
+    if (P.ended && delta < 0) { P.ended = false; P.pos = end; }
+    P.pos = Math.min(end, Math.max(0, P.pos + delta));
+    P.idx = indexAt(P.pos);
+    renderLines(true);
+  }
+
+  function endSong() {
+    P.ended = true;
+    renderLines(true);
+  }
+
+  function togglePlay() {
+    if (!P) return;
+    P.playing = !P.playing;
+    updatePlayIcon();
+    renderHint();
+  }
+  function updatePlayIcon() {
+    const playing = P?.playing;
+    $('#play-icon').setAttribute('d', playing ? 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z' : 'M8 5v14l11-7z');
+    $('#c-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+  function changeRate(d) {
+    if (!P || !P.timed) return;
+    P.rate = Math.min(1.5, Math.max(0.5, Math.round((P.rate + d) * 100) / 100));
+    updateRate();
+  }
+  function updateRate() { $('#rate').textContent = `${Math.round((P?.rate || 1) * 100)}%`; }
+
+  function renderLines(animate) {
+    const song = S.songs[P.i];
+    const { lines, idx } = P;
+    const cur = $('#l-cur');
+    let prevText = '', curText = '', nextText = '', kind = '';
+
+    if (P.ended) {
+      const nx = S.songs[P.i + 1];
+      prevText = song.title;
+      curText = nx ? 'Up next' : 'End of setlist';
+      nextText = nx ? nx.title + (nx.artist ? ` · ${nx.artist}` : '') : '';
+      kind = 'card';
+    } else if (idx < 0) {
+      prevText = song.artist || '';
+      curText = song.title || 'Untitled';
+      nextText = lines.length ? (lines[0].text || '♪') : song.noLyrics ? 'Instrumental' : 'No lyrics for this song yet';
+      kind = 'card';
+    } else {
+      prevText = idx > 0 ? (lines[idx - 1].text || '♪') : '';
+      curText = lines[idx].text;
+      nextText = idx < lastIdx() ? (lines[idx + 1].text || '♪') : '';
+      if (!curText) { curText = '♪'; kind = 'gap'; }
+    }
+
+    $('#l-prev').textContent = prevText;
+    $('#l-next').textContent = nextText;
+    cur.textContent = curText;
+    cur.className = `line ${kind}`;
+    if (animate) { void cur.offsetWidth; cur.classList.add('enter'); }
+    fit();
+
+    const endActions = $('#end-actions');
+    endActions.hidden = !P.ended;
+    $('#start-next').hidden = !S.songs[P.i + 1];
+    const canSave = P.ended && !P.timed && lines.length > 0 && lines.every((_, k) => P.stamps[k] != null);
+    $('#save-timing').hidden = !canSave;
+
+    $('#p-mode').textContent = P.timed ? 'Synced' : 'Tap';
+    renderHint();
+  }
+
+  function renderHint() {
+    const h = $('#p-hint');
+    if (!P) return;
+    if (!P.playing && !P.ended) { h.textContent = 'Paused · tap the middle to resume'; return; }
+    if (P.ended) {
+      h.textContent = S.songs[P.i + 1] ? 'Tap anywhere to start the next song' : 'Tap the menu button to go back to the setlist';
+      return;
+    }
+    if (P.idx < 0) {
+      if (!P.lines.length) h.textContent = S.songs[P.i].noLyrics ? 'Instrumental · tap when the next song starts' : 'No lyrics yet · use Get lyrics or ✎ on the setlist';
+      else if (P.timed) h.textContent = `First line in ${fmtClock(Math.ceil((P.lines[0].t - P.pos) / P.rate))} · tap ${isPortrait() ? 'below' : 'right'} to start now`;
+      else h.textContent = `Tap ${isPortrait() ? 'below' : 'the right side'} when the first line starts`;
+      return;
+    }
+    h.textContent = isPortrait()
+      ? 'Tap below for the next line · above to go back · the lyric to pause'
+      : 'Tap right for the next line · left to go back · middle to pause';
+  }
+
+  function fit() {
+    const cur = $('#l-cur');
+    const stage = $('#stage');
+    const maxH = stage.clientHeight * 0.56;
+    const maxW = stage.clientWidth - 2 * 0.05 * innerWidth;
+    let size = Math.min(innerWidth * 0.125, innerHeight * 0.17, 168);
+    if (cur.classList.contains('card')) size *= 0.85;
+    cur.style.fontSize = size + 'px';
+    while ((cur.scrollHeight > maxH || cur.scrollWidth > maxW + 1) && size > 18) {
+      size *= 0.92;
+      cur.style.fontSize = size + 'px';
+    }
+  }
+  addEventListener('resize', () => { if (P) { fit(); renderHint(); } });
+
+  function frame(now) {
+    const dt = Math.min(0.25, (now - lastFrame) / 1000);
+    lastFrame = now;
+    if (P) {
+      if (P.playing && !P.ended) P.pos += dt * (P.timed ? P.rate : 1);
+      if (P.timed && !P.ended && P.lines.length) {
+        const idx = indexAt(P.pos);
+        if (idx !== P.idx) { P.idx = idx; renderLines(true); }
+        else if (idx < 0) renderHint();
+        if (P.idx === lastIdx() && P.pos > P.lines[P.idx].t + END_HOLD) endSong();
+      }
+      $('#p-time').textContent = fmtClock(P.pos);
+      let pct = 0;
+      if (P.ended) pct = 1;
+      else if (P.timed && P.lines.length) pct = P.pos / (P.lines[lastIdx()].t + END_HOLD);
+      else if (P.lines.length) pct = (P.idx + 1) / P.lines.length;
+      $('#p-bar').style.width = `${Math.min(100, pct * 100)}%`;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame((t) => { lastFrame = t; frame(t); });
+
+  // Stage taps.
+  //   Portrait:  above the current line = previous line, below it = next line, on it = pause.
+  //   Landscape: left third = previous line, right third = next line, middle = pause.
+  // "Next line" re-syncs the clock to the moment of the tap.
+  const isPortrait = () => innerHeight > innerWidth;
+
+  function tapZone(e) {
+    const stage = $('#stage').getBoundingClientRect();
+    if (!isPortrait()) {
+      const fx = (e.clientX - stage.left) / stage.width;
+      return fx < 1 / 3 ? -1 : fx > 2 / 3 ? 1 : 0;
+    }
+    const cur = $('#l-cur').getBoundingClientRect();
+    const mid = (cur.top + cur.bottom) / 2;
+    const half = Math.max(cur.height, stage.height * 0.25) / 2; // keep the pause zone easy to hit
+    return e.clientY < mid - half ? -1 : e.clientY > mid + half ? 1 : 0;
+  }
+
+  $('#stage').addEventListener('click', (e) => {
+    if (!P || e.target.closest('button')) return;
+    const zone = tapZone(e);
+    if (zone < 0) prev();
+    else if (zone > 0 || P.ended) next();
+    else { togglePlay(); flash(P.playing ? 'Playing' : 'Paused'); }
+  });
+
+  let flashTimer;
+  function flash(text) {
+    const f = $('#flash');
+    f.textContent = text;
+    f.className = '';
+    f.hidden = false;
+    void f.offsetWidth;
+    f.classList.add('show');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => f.classList.remove('show'), 550);
+  }
+  $('#start-next').onclick = () => startSong(P.i + 1);
+  $('#save-timing').onclick = () => {
+    const song = S.songs[P.i];
+    song.lyrics = P.lines.map((l, k) => `[${fmtLrc(P.stamps[k])}] ${l.text}`).join('\n');
+    save();
+    $('#save-timing').hidden = true;
+    toast('Timings saved. This song will now scroll by itself.');
+  };
+
+  $('#c-back').onclick = exitPlayer;
+  $('#c-prev').onclick = prev;
+  $('#c-next').onclick = () => next();
+  $('#c-play').onclick = togglePlay;
+  $('#c-prev-song').onclick = () => P && (P.pos > 3 && !P.ended ? startSong(P.i) : startSong(P.i - 1));
+  $('#c-next-song').onclick = () => P && startSong(P.i + 1);
+  $('#c-slower').onclick = () => changeRate(-0.05);
+  $('#c-faster').onclick = () => changeRate(0.05);
+
+  const canFull = !!document.documentElement.requestFullscreen;
+  $('#c-full').hidden = !canFull;
+  function toggleFull() {
+    if (!canFull) return;
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {});
+  }
+  $('#c-full').onclick = toggleFull;
+
+  addEventListener('keydown', (e) => {
+    if (!P || dlg.open || e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (e.shiftKey && (k === 'ArrowRight' || k === 'ArrowLeft')) { e.preventDefault(); seek(k === 'ArrowRight' ? 5 : -5); }
+    else if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
+    else if (k === 'p' || k === 'P' || k === 'k') togglePlay();
+    else if (k === 'n' || k === 'N') startSong(P.i + 1);
+    else if (k === 'b' || k === 'B') startSong(P.i - 1);
+    else if (k === 'f' || k === 'F') toggleFull();
+    else if (k === '-' ) changeRate(-0.05);
+    else if (k === '=' || k === '+') changeRate(0.05);
+    else if (k === 'Escape' && !document.fullscreenElement) exitPlayer();
+  });
+
+  // keep the screen awake while lyrics are up
+  async function requestWake() {
+    try { wakeLock = await navigator.wakeLock?.request('screen'); } catch {}
+  }
+  function releaseWake() { try { wakeLock?.release(); } catch {} wakeLock = null; }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && P) requestWake();
+  });
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (t.hidden = true), 3200);
+  }
+
+  renderList();
+
+  // Installable + offline: cache the app, and ask the browser not to evict saved lyrics.
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  navigator.storage?.persist?.().catch(() => {});
+})();
+</script>
+</body>
+</html>
