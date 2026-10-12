@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached so the app opens with no signal at the venue.
 // Lyrics live in localStorage, so only LRCLIB lookups need a connection.
-const CACHE = 'setlist-lyrics-v4';
+const CACHE = 'setlist-lyrics-v5';
 const SHELL = [
   './',
   './index.html',
